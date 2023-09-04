@@ -125,6 +125,30 @@ void main_task(intptr_t unused) {
 	continue;
       }
 
+      if (cmd_id == 130) {
+        uint8_t gyro_sensor_port = read_byte(serial);
+        ev3_gyro_sensor_reset(gyro_sensor_port);
+        continue;
+      }
+
+      if (cmd_id == 131) {
+        uint8_t gyro_sensor_port = read_byte(serial);
+        int16_t angle = ev3_gyro_sensor_get_angle(gyro_sensor_port);
+        fputc((uint8_t)254, serial);
+        fputc((uint8_t)(angle >> 8), serial);
+        fputc((uint8_t)angle, serial);
+        continue;
+      }
+
+      if (cmd_id == 132) {
+        uint8_t gyro_sensor_port = read_byte(serial);
+        int16_t angle = ev3_gyro_sensor_get_rate(gyro_sensor_port);
+        fputc((uint8_t)254, serial);
+        fputc((uint8_t)(angle >> 8), serial);
+        fputc((uint8_t)angle, serial);
+        continue;
+      }
+
       if (cmd_id == 200) {
         char str[100];
 	uint8_t line = read_byte(serial);
