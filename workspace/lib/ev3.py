@@ -250,6 +250,22 @@ class EV3():
         assert(state == 1 or state == 0)       
         return True if state == 1 else False
 
+    def gyro_sensor_reset(self, gyro):
+        self._send_header(130)
+        self._write([gyro])
+
+    def gyro_sensor_get_angle(self, gyro):
+        self._send_header(131)
+        self._write([gyro])
+        angle = self._read()
+        return angle
+
+    def gyro_sensor_get_rate(self, gyro):
+        self._send_header(132)
+        self._write([gyro])
+        rate = self._read()
+        return rate
+
 
 class TestEV3(unittest.TestCase):
     def test_write(self):
