@@ -3,3 +3,4 @@ Pillow
 pyserial
 jupyterlab
 picamera
+jupyterlab-language-pack-ja-JP
