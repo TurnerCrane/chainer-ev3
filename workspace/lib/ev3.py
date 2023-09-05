@@ -257,15 +257,18 @@ class EV3():
     def gyro_sensor_get_angle(self, gyro):
         self._send_header(131)
         self._write([gyro])
-        angle = self._read()
-        return angle
+        data1 = self._read()
+        data2 = self._read()
+        angle = data1 << 8 | data2
+        return int.from_bytes(angle.to_bytes(2, byteorder = "big"), byteorder='big', signed=True)
 
     def gyro_sensor_get_rate(self, gyro):
         self._send_header(132)
         self._write([gyro])
-        rate = self._read()
-        return rate
-
+        data1 = self._read()
+        data2 = self._read()
+        rate = data1 << 8 | data2
+        return int.from_bytes(rate.to_bytes(2, byteorder = "big"), byteorder='big', signed=True)
 
 class TestEV3(unittest.TestCase):
     def test_write(self):
