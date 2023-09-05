@@ -136,6 +136,7 @@ void main_task(intptr_t unused) {
         int16_t angle = ev3_gyro_sensor_get_angle(gyro_sensor_port);
         fputc((uint8_t)254, serial);
         fputc((uint8_t)(angle >> 8), serial);
+	fputc((uint8_t)254, serial);
         fputc((uint8_t)angle, serial);
         continue;
       }
@@ -145,6 +146,7 @@ void main_task(intptr_t unused) {
         int16_t angle = ev3_gyro_sensor_get_rate(gyro_sensor_port);
         fputc((uint8_t)254, serial);
         fputc((uint8_t)(angle >> 8), serial);
+	fputc((uint8_t)254, serial);
         fputc((uint8_t)angle, serial);
         continue;
       }
