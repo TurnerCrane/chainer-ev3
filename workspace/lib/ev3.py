@@ -6,7 +6,20 @@ import time
 import socket
 import queue
 from datetime import datetime
+from enum import Enum
 
+class MsgId(Enum):
+    MOTOR_CONFIG = 0
+    ENABLE_WATCHDOG_TASK = 1
+    MOTOR_STEER = 10
+    SENSOR_CONFIG = 100
+    TOUCH_SENSOR_IS_PRESSED = 110
+    COLOR_SENSOR_GET_REFLECT = 120
+    LCD_DRAW_STRING = 200
+    BUTTON_IS_PRESSED = 210
+    GYRO_SENSOR_RESET = 130
+    GYRO_SENSOR_GET_ANGLE = 131
+    GYRO_SENSOR_GET_RATE = 132
 
 class BaseCommunicator():
     def write(self, items):
@@ -199,14 +212,14 @@ class EV3():
         self._write([255, cmd_id])
 
     def motor_config(self, motor_port, motor_type):
-        self._send_header(0)
+        self._send_header(MsgId.MOTOR_CONFIG.value)
         self._write([motor_port, motor_type])
 
     def enable_watchdog_task(self):
-        self._send_header(1)
+        self._send_header(MsgId.ENABLE_WATCHDOG_TASK.value)
 
     def motor_steer(self, left_motor_port, right_motor_port, drive, steer):
-        self._send_header(10)
+        self._send_header(MsgId.MOTOR_STEER.value)
         drive = int(drive) + 100
         steer = int(steer) + 100
         drive = min(max(drive, 0), 200)
@@ -214,25 +227,25 @@ class EV3():
         self._write([left_motor_port, right_motor_port, drive, steer])
 
     def sensor_config(self, sensor_port, sensor_type):
-        self._send_header(100)
+        self._send_header(MsgId.SENSOR_CONFIG.value)
         self._write([sensor_port, sensor_type])
 
     def touch_sensor_is_pressed(self, touch_sensor_port):
-        self._send_header(110)
+        self._send_header(MsgId.TOUCH_SENSOR_IS_PRESSED.value)
         self._write([touch_sensor_port])
         touch = self._read()
         assert(touch == 1 or touch == 0)
         return True if touch == 1 else False
 
     def color_sensor_get_reflect(self, color_sensor_port):
-        self._send_header(120)
+        self._send_header(MsgId.COLOR_SENSOR_GET_REFLECT.value)
         self._write([color_sensor_port])
         color = self._read()
         assert(color <= 100)
         return color
 
     def lcd_draw_string(self, string, line):
-        self._send_header(200)
+        self._send_header(MsgId.LCD_DRAW_STRING.value)
         self._write([line])
         if len(string) < 20:
             string = string + ' ' * (20 - len(string))
@@ -244,30 +257,30 @@ class EV3():
         self.lcd_draw_string(' ' * 20, line)
 
     def button_is_pressed(self, button):
-        self._send_header(210)
+        self._send_header(MsgId.BUTTON_IS_PRESSED.value)
         self._write([button])
         state = self._read()
         assert(state == 1 or state == 0)       
         return True if state == 1 else False
 
     def gyro_sensor_reset(self, gyro):
-        self._send_header(130)
+        self._send_header(MsgId.GYRO_SENSOR_RESET.value)
         self._write([gyro])
 
     def gyro_sensor_get_angle(self, gyro):
-        self._send_header(131)
+        self._send_header(MsgId.GYRO_SENSOR_GET_ANGLE.value)
         self._write([gyro])
-        data1 = self._read()
-        data2 = self._read()
-        angle = data1 << 8 | data2
+        angle1 = self._read()
+        angle2 = self._read()
+        angle = angle1 << 8 | angle2
         return int.from_bytes(angle.to_bytes(2, byteorder = "big"), byteorder='big', signed=True)
 
     def gyro_sensor_get_rate(self, gyro):
-        self._send_header(132)
+        self._send_header(MsgId.GYRO_SENSOR_GET_RATE.value)
         self._write([gyro])
-        data1 = self._read()
-        data2 = self._read()
-        rate = data1 << 8 | data2
+        rate1 = self._read()
+        rate2 = self._read()
+        rate = rate1 << 8 |  rate2
         return int.from_bytes(rate.to_bytes(2, byteorder = "big"), byteorder='big', signed=True)
 
 class TestEV3(unittest.TestCase):
@@ -310,3 +323,4 @@ class TestEV3(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
