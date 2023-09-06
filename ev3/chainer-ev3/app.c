@@ -188,7 +188,6 @@ void main_task(intptr_t unused) {
             case COLOR_SENSOR_GET_COLOR:
                 {
                     uint8_t color_sensor_port = read_byte(serial);
-                    // colorid_tとuint8_tをキャストする方法を考える
                     uint8_t color = ev3_color_sensor_get_color(color_sensor_port);
                     fputc((uint8_t)254, serial);
                     fputc((uint8_t)color, serial);
@@ -199,7 +198,7 @@ void main_task(intptr_t unused) {
                     uint8_t color_sensor_port = read_byte(serial);
                     rgb_raw_t rgb_raw;
                     uint16_t rgb[3];
-                    ev3_color_sensor_get_rgb_raw(color_sensor_port, &rgb);
+                    ev3_color_sensor_get_rgb_raw(color_sensor_port, &rgb_raw);
                     rgb[0] = rgb_raw.r;
                     rgb[1] = rgb_raw.g;
                     rgb[2] = rgb_raw.b;
