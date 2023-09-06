@@ -24,7 +24,7 @@ ulong_t get_time()
 {
     static ulong_t start = -1;
     ulong_t time;
-    get_tim(&time);
+    get_tim(&time); 
     if(start < 0){
         start = time;
     }
@@ -78,15 +78,17 @@ void main_task(intptr_t unused) {
         // ev3_lcd_draw_string(lcdstr, 0, fonth * 7);
 
         switch((msg_id)cmd_id) {
+            // タスク制御等
+            case ENABLE_WATCHDOG_TASK:
+                enable_watchdog_task = 1;
+                break;
+            // モーター
             case MOTOR_CONFIG:
                 {
                     int motor_port = read_byte(serial);
                     int motor_type = read_byte(serial);
                     ev3_motor_config(motor_port, motor_type);
                 }
-                break;
-            case ENABLE_WATCHDOG_TASK:
-                enable_watchdog_task = 1;
                 break;
             case MOTOR_STEER:
                 {
@@ -101,6 +103,55 @@ void main_task(intptr_t unused) {
                     ev3_motor_steer(left_motor_port, right_motor_port, drive, steer);
                 }
                 break;
+            case MOTOR_GET_COUNTS:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    uint32_t counts = ev3_motor_get_counts(motor_port);
+                    int i;
+                    for(i=3; i>0; i--) {
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)(counts >> (8 * i)), serial);
+                    }
+                }
+                break;
+            case MOTOTR_GET_POWER:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    uint8_t counts = ev3_motor_get_power(motor_port);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)counts , serial);
+                }
+                break;
+            case MOTOR_RESET_COUNTS:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    ev3_motor_reset_counts(motor_port);
+                }
+                break;
+            case MOTOR_ROTATE:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    uint8_t degrees = read_byte(serial);
+                    uint32_t speed_abs = read_byte(serial);
+                    uint8_t blocking = read_byte(serial);
+                    ev3_motor_rotate(motor_port, degrees, speed_abs, blocking);
+                }
+                break;
+            case MOTOR_SET_POWER:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    uint8_t power = read_byte(serial);
+                    ev3_motor_set_power(motor_port, power);
+                }
+                break;
+            case MOTOR_STOP:
+                {
+                    uint8_t motor_port = read_byte(serial);
+                    uint8_t breaking = read_byte(serial);
+                    ev3_motor_stop(motor_port, breaking);
+                }
+                break;
+            // センサ共通
             case SENSOR_CONFIG:
                 {
                     uint8_t sensor_port = read_byte(serial);
@@ -108,6 +159,7 @@ void main_task(intptr_t unused) {
                     ev3_sensor_config(sensor_port, sensor_type);
                 }
                 break;
+            // タッチセンサ
             case TOUCH_SENSOR_IS_PRESSED:
                 {
                     uint8_t touch_sensor_port = read_byte(serial);
@@ -116,6 +168,7 @@ void main_task(intptr_t unused) {
                     fputc((uint8_t)touch, serial);
                 }
                 break;
+            // カラーセンサ
             case COLOR_SENSOR_GET_REFLECT:
                 {
                     uint8_t color_sensor_port = read_byte(serial);
@@ -124,31 +177,42 @@ void main_task(intptr_t unused) {
                     fputc((uint8_t)color, serial);
                 }
                 break;
-            case LCD_DRAW_STRING:
+            case COLOR_SENSOR_GET_AMBIENT:
                 {
-                    char str[100];
-                    uint8_t line = read_byte(serial);
-                    int i = 0;
-                    for (i=0; i<100; i++) {
-                        uint8_t r = read_byte(serial);
-                        str[i] = r;
-                        if (r == 0) break;
-                    }
-                    strcpy(lcdstr, str);
-                    ev3_lcd_draw_string(lcdstr, 0, fonth * line);
-                }
-                break;
-            case BUTTON_IS_PRESSED:
-                {
-                    uint8_t button = read_byte(serial);
-                    bool_t button_state = ev3_button_is_pressed(button);
-                    if (button_state) {
-                        button_state = 1;
-                    }
+                    uint8_t color_sensor_port = read_byte(serial);
+                    uint8_t ambient = ev3_color_sensor_get_ambient(color_sensor_port);
                     fputc((uint8_t)254, serial);
-                    fputc((uint8_t)button_state, serial);
+                    fputc((uint8_t)ambient, serial);
                 }
                 break;
+            case COLOR_SENSOR_GET_COLOR:
+                {
+                    uint8_t color_sensor_port = read_byte(serial);
+                    // colorid_tとuint8_tをキャストする方法を考える
+                    uint8_t color = ev3_color_sensor_get_color(color_sensor_port);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)color, serial);
+                }
+                break;
+            case COLOR_SENSOR_GET_RGB_RAW:
+                {
+                    uint8_t color_sensor_port = read_byte(serial);
+                    rgb_raw_t rgb_raw;
+                    uint16_t rgb[3];
+                    ev3_color_sensor_get_rgb_raw(color_sensor_port, &rgb);
+                    rgb[0] = rgb_raw.r;
+                    rgb[1] = rgb_raw.g;
+                    rgb[2] = rgb_raw.b;
+                    int i;
+                    for(i=0; i<3; i++){
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)(rgb[i] >> 8), serial);
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)rgb[i], serial);
+                    }
+                }
+                break;
+            // ジャイロセンサ
             case GYRO_SENSOR_RESET:
                 {
                     uint8_t gyro_sensor_port = read_byte(serial);
@@ -173,6 +237,87 @@ void main_task(intptr_t unused) {
                     fputc((uint8_t)(angle >> 8), serial);
                     fputc((uint8_t)254, serial);
                     fputc((uint8_t)angle, serial);
+                }
+                break;
+            // 超音波センサ
+            case ULTRASONIC_SENSOR_GET_DISTANCE:
+                {
+                    uint8_t ultrasonic_sensor_port = read_byte(serial);
+                    uint16_t distance = ev3_ultrasonic_sensor_get_distance(ultrasonic_sensor_port);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)(distance >> 8), serial);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)distance, serial);
+                }
+                break;
+            case ULTRASONIC_SENSOR_LISTEN:
+                {
+                    uint8_t ultrasonic_sensor_port = read_byte(serial);
+                    uint8_t listen = ev3_ultrasonic_sensor_listen(ultrasonic_sensor_port);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)listen, serial);
+                }
+                break;
+            // 赤外線センサ
+            case INFRARED_SENSOR_GET_DISTANCE:
+                {
+                    uint8_t infrared_sensor_port = read_byte(serial);
+                    uint8_t distance = ev3_infrared_sensor_get_distance(infrared_sensor_port);
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)distance, serial);
+                }
+                break;
+            case INFRARED_SENSOR_GET_REMOTE:
+                {
+                    uint8_t infrared_sensor_port = read_byte(serial);
+                    ir_remote_t ir_remote = ev3_infrared_sensor_get_remote(infrared_sensor_port);
+                    // ir_remote_tとuint8_t[4]をキャストする方法を考える
+                    uint8_t channel[4];
+                    int i;
+                    for(i=0; i<4; i++) {
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)channel[i], serial);
+                    }
+                }
+                break;
+            case INFRARED_SENSOR_SEEK:
+                {
+                    uint8_t infrared_sensor_port = read_byte(serial);
+                    ir_seek_t ir_seek = ev3_infrared_sensor_seek(infrared_sensor_port);
+                    // ir_remote_tとuint8_t[8]をキャストする方法を考える
+                    // 前半はheading[4], 後半はdistance[4]
+                    uint8_t seek[8];
+                    int i;
+                    for(i=0; i<8; i++) {
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)seek[i], serial);
+                    }
+                }
+                break;
+            // EV3本体
+            case LCD_DRAW_STRING:
+                {
+                    char str[100];
+                    uint8_t line = read_byte(serial);
+                    int i = 0;
+                    for (i=0; i<100; i++) {
+                        uint8_t r = read_byte(serial);
+                        str[i] = r;
+                        if (r == 0) break;
+                    }
+                    strcpy(lcdstr, str);
+                    ev3_lcd_draw_string(lcdstr, 0, fonth * line);
+                }
+                break;
+            case BUTTON_IS_PRESSED:
+                {
+                    uint8_t button = read_byte(serial);
+                    bool_t button_state = ev3_button_is_pressed(button);
+                    if (button_state) {
+                        button_state = 1;
+                    }
+                    fputc((uint8_t)254, serial);
+                    fputc((uint8_t)button_state, serial);
                 }
                 break;
             default:
