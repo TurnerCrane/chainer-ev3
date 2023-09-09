@@ -125,16 +125,15 @@ void main_task(intptr_t unused) {
                     if (drive < -100) drive=-100;
                     if (steer > 100) steer=100;
                     if (steer < -100) steer=-100;
-                    // MotorとSteerが入っているか確認した方がいいかも
+                    if(steering == nullptr) return;
                     steering->setPower(drive, steer);
                 }
                 break;
-            /*
             case MOTOR_GET_COUNTS:
                 {
-                    ePortM motor_port = (ePortM)read_byte(serial);
+                    motor_port_t motor_port = (motor_port_t)read_byte(serial);
                     if(motor[(int)motor_port] == nullptr) return;
-                    int32_t counts = motor[(int)motor_port]->getCount();
+                    int32_t counts = ev3_motor_get_counts(motor_port);
                     int i;
                     for(i=3; i>0; i--) {
                         fputc((uint8_t)254, serial);
@@ -144,14 +143,13 @@ void main_task(intptr_t unused) {
                 break;
             case MOTOTR_GET_POWER:
                 {
-                    ePortM motor_port = (ePortM)read_byte(serial);
+                    motor_port_t motor_port = (motor_port_t)read_byte(serial);
                     if(motor[(int)motor_port] == nullptr) return;
-                    int counts = motor[(int)motor_port]->mPWM;
+                    int counts = ev3_motor_get_power(motor_port);
                     fputc((uint8_t)254, serial);
                     fputc((uint8_t)counts , serial);
                 }
                 break;
-            */
             case MOTOR_RESET_COUNTS:
                 {
                     ePortM motor_port = (ePortM)read_byte(serial);
@@ -199,7 +197,7 @@ void main_task(intptr_t unused) {
                     switch(sensor_type)
                     {
                         case ULTRASONIC_SENSOR:
-                            // sensor[(int)sensor_port] = new Sensor(sensor_port, sensor_type);
+                            sensor[(int)sensor_port] = new SonarSensor(sensor_port);
                             break;
                         case GYRO_SENSOR:
                             sensor[(int)sensor_port] = new GyroSensor(sensor_port);
@@ -268,8 +266,7 @@ void main_task(intptr_t unused) {
                     rgb[0] = rgb_raw.r;
                     rgb[1] = rgb_raw.g;
                     rgb[2] = rgb_raw.b;
-                    int i;
-                    for(i=0; i<3; i++){
+                    for(int i=0; i<3; i++){
                         fputc((uint8_t)254, serial);
                         fputc((uint8_t)(rgb[i] >> 8), serial);
                         fputc((uint8_t)254, serial);
@@ -334,10 +331,9 @@ void main_task(intptr_t unused) {
                 }
                 break;
             // 赤外線センサ
-            /*
             case INFRARED_SENSOR_GET_DISTANCE:
                 {
-                    uint8_t infrared_sensor_port = read_byte(serial);
+                    sensor_port_t infrared_sensor_port = (sensor_port_t)read_byte(serial);
                     uint8_t distance = ev3_infrared_sensor_get_distance(infrared_sensor_port);
                     fputc((uint8_t)254, serial);
                     fputc((uint8_t)distance, serial);
@@ -345,36 +341,32 @@ void main_task(intptr_t unused) {
                 break;
             case INFRARED_SENSOR_GET_REMOTE:
                 {
-                    uint8_t infrared_sensor_port = read_byte(serial);
+                    sensor_port_t infrared_sensor_port = (sensor_port_t)read_byte(serial);
                     ir_remote_t ir_remote = ev3_infrared_sensor_get_remote(infrared_sensor_port);
-                    uint8_t channel[4];
-                    int i;
-                    for(i=0; i<4; i++) {
+                    for(int i=0; i<4; i++) {
                         fputc((uint8_t)254, serial);
-                        fputc((uint8_t)channel[i], serial);
+                        fputc((uint8_t)ir_remote.channel[i], serial);
                     }
                 }
                 break;
             case INFRARED_SENSOR_SEEK:
                 {
-                    uint8_t infrared_sensor_port = read_byte(serial);
+                    sensor_port_t infrared_sensor_port = (sensor_port_t)read_byte(serial);
                     ir_seek_t ir_seek = ev3_infrared_sensor_seek(infrared_sensor_port);
-                    uint8_t seek[8];
-                    int i;
-                    for(i=0; i<8; i++) {
+                    for(int i=0; i<4; i++) {
                         fputc((uint8_t)254, serial);
-                        fputc((uint8_t)seek[i], serial);
+                        fputc((uint8_t)ir_seek.heading[i], serial);
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)ir_seek.distance[i], serial);
                     }
                 }
                 break;
-            */
             // EV3本体
             case LCD_DRAW_STRING:
                 {
                     char str[100];
                     uint8_t line = read_byte(serial);
-                    int i = 0;
-                    for (i=0; i<100; i++) {
+                    for (int i=0; i<100; i++) {
                         uint8_t r = read_byte(serial);
                         str[i] = r;
                         if (r == 0) break;
