@@ -270,12 +270,10 @@ void main_task(intptr_t unused) {
                 {
                     uint8_t infrared_sensor_port = read_byte(serial);
                     ir_remote_t ir_remote = ev3_infrared_sensor_get_remote(infrared_sensor_port);
-                    // ir_remote_tとuint8_t[4]をキャストする方法を考える
-                    uint8_t channel[4];
                     int i;
                     for(i=0; i<4; i++) {
                         fputc((uint8_t)254, serial);
-                        fputc((uint8_t)channel[i], serial);
+                        fputc((uint8_t)ir_remote.channel[i], serial);
                     }
                 }
                 break;
@@ -283,13 +281,12 @@ void main_task(intptr_t unused) {
                 {
                     uint8_t infrared_sensor_port = read_byte(serial);
                     ir_seek_t ir_seek = ev3_infrared_sensor_seek(infrared_sensor_port);
-                    // ir_remote_tとuint8_t[8]をキャストする方法を考える
-                    // 前半はheading[4], 後半はdistance[4]
-                    uint8_t seek[8];
                     int i;
-                    for(i=0; i<8; i++) {
+                    for(i=0; i<4; i++) {
                         fputc((uint8_t)254, serial);
-                        fputc((uint8_t)seek[i], serial);
+                        fputc((uint8_t)ir_seek.heading[i], serial);
+                        fputc((uint8_t)254, serial);
+                        fputc((uint8_t)ir_seek.distance[i], serial);
                     }
                 }
                 break;
